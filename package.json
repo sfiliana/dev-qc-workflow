@@ -9,13 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "lucide-react": "latest",
-    "clsx": "latest",
-    "tailwind-merge": "latest"
-  },
+  "next": "latest",
+  "react": "latest",
+  "react-dom": "latest",
+  "lucide-react": "latest",
+  "clsx": "latest",
+  "tailwind-merge": "latest",
+  "@vercel/analytics": "latest" 
+},
   "devDependencies": {
     "typescript": "latest",
     "@types/node": "latest",
