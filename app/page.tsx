@@ -1,6 +1,6 @@
 "use client";
 
-import { KanbanBoard } from "@/components/kanban/kanban-board";
+import { KanbanBoard } from "@/components/kanban/kanban-board.tsx";
 import { LayoutDashboard, Users, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 
