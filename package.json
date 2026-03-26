@@ -1,5 +1,5 @@
 {
-  "name": "dev-qc-workflow",
+  "name": "dev-qc-kanban",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,9 +9,19 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "14.x.x", 
-    "react": "18.x.x",
-    "react-dom": "18.x.x",
-    "lucide-react": "latest"
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "lucide-react": "latest",
+    "clsx": "latest",
+    "tailwind-merge": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "postcss": "latest",
+    "tailwindcss": "latest"
   }
 }
