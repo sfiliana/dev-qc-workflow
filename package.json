@@ -15,7 +15,7 @@
   "lucide-react": "latest",
   "clsx": "latest",
   "tailwind-merge": "latest",
-  "@vercel/analytics": "latest" 
+  "class-variance-authority": "latest"
 },
   "devDependencies": {
     "typescript": "latest",
