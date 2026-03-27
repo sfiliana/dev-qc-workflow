@@ -1,0 +1,221 @@
+import type { Task } from "./kanban-types";
+
+export const initialTasks: Task[] = [
+  {
+    id: "1",
+    title: "Implementasi User Authentication",
+    projectName: "ERP System",
+    description:
+      "Membuat sistem login dan registrasi dengan JWT token dan refresh token untuk keamanan aplikasi. Termasuk fitur reset password, remember me, dan two-factor authentication.",
+    taskType: "task",
+    priority: "high",
+    developers: [
+      { id: "dev1", name: "Budi Santoso", role: "developer" },
+      { id: "dev2", name: "Dewi Lestari", role: "developer" },
+    ],
+    qcAssignees: [],
+    tags: ["Backend", "Security"],
+    status: "BACKLOG",
+    receivedDate: "2026-03-20",
+    auditTrail: [
+      { action: "Task created", by: "System", timestamp: "2026-03-20T09:00:00" },
+    ],
+  },
+  {
+    id: "2",
+    title: "Desain Dashboard Analytics",
+    projectName: "Analytics Portal",
+    description:
+      "Membuat tampilan dashboard yang menampilkan statistik dan grafik performa sistem secara real-time. Mencakup chart interaktif, filter data, dan export laporan.",
+    taskType: "task",
+    priority: "medium",
+    developers: [
+      { id: "dev3", name: "Sari Dewi", role: "developer" },
+      { id: "dev4", name: "Andi Wijaya", role: "developer" },
+      { id: "dev5", name: "Putri Maharani", role: "developer" },
+    ],
+    qcAssignees: [],
+    tags: ["Frontend", "UI/UX"],
+    status: "DEVELOPMENT",
+    receivedDate: "2026-03-15",
+    movedDate: "2026-03-18",
+    auditTrail: [
+      { action: "Task created", by: "System", timestamp: "2026-03-15T10:00:00" },
+      { action: "Moved to DEVELOPMENT", by: "Sari Dewi", timestamp: "2026-03-18T14:30:00" },
+    ],
+  },
+  {
+    id: "3",
+    title: "Integrasi Payment Gateway",
+    projectName: "E-Commerce App",
+    description:
+      "Mengintegrasikan sistem pembayaran dengan berbagai metode: transfer bank, e-wallet, dan kartu kredit. Mendukung multiple currency dan automated reconciliation.",
+    taskType: "task",
+    priority: "high",
+    developers: [
+      { id: "dev6", name: "Andi Pratama", role: "developer" },
+      { id: "dev7", name: "Rini Kusuma", role: "developer" },
+    ],
+    qcAssignees: [
+      { id: "qc1", name: "Agus Setiawan", role: "qc" },
+      { id: "qc2", name: "Maya Sari", role: "qc" },
+    ],
+    tags: ["Backend", "Integration"],
+    status: "QC TEST",
+    receivedDate: "2026-03-10",
+    movedDate: "2026-03-22",
+    auditTrail: [
+      { action: "Task created", by: "System", timestamp: "2026-03-10T09:00:00" },
+      { action: "Moved to DEVELOPMENT", by: "Andi Pratama", timestamp: "2026-03-12T10:00:00" },
+      { action: "Moved to QC TEST", by: "Rini Kusuma", timestamp: "2026-03-22T16:00:00" },
+    ],
+  },
+  {
+    id: "4",
+    title: "API Rate Limiting Implementation",
+    projectName: "API Gateway",
+    description:
+      "Implementasi rate limiting pada semua endpoint API untuk mencegah abuse dan DDoS attacks. Menggunakan Redis untuk distributed rate limiting dengan sliding window algorithm.",
+    taskType: "patch",
+    priority: "high",
+    developers: [{ id: "dev8", name: "Fajar Nugroho", role: "developer" }],
+    qcAssignees: [],
+    tags: ["Backend", "Security"],
+    status: "BACKLOG",
+    receivedDate: "2026-03-24",
+    auditTrail: [
+      { action: "Task created", by: "System", timestamp: "2026-03-24T08:00:00" },
+    ],
+  },
+  {
+    id: "5",
+    title: "Bug Fix: Login Session Timeout",
+    projectName: "ERP System",
+    description:
+      "Perbaikan bug dimana user session tidak ter-refresh dengan benar setelah activity. Session seharusnya extend setiap ada activity dari user.",
+    taskType: "patch",
+    priority: "medium",
+    developers: [
+      { id: "dev1", name: "Budi Santoso", role: "developer" },
+      { id: "dev9", name: "Diana Putri", role: "developer" },
+    ],
+    qcAssignees: [],
+    tags: ["Backend", "Bug Fix"],
+    status: "BACKLOG",
+    receivedDate: "2026-03-22",
+    auditTrail: [
+      { action: "Task created", by: "System", timestamp: "2026-03-22T11:00:00" },
+    ],
+  },
+  {
+    id: "6",
+    title: "Mobile Responsive Optimization",
+    projectName: "Customer Portal",
+    description:
+      "Optimisasi tampilan mobile untuk semua halaman utama. Fokus pada navigation, forms, dan data tables agar mudah digunakan di perangkat mobile.",
+    taskType: "task",
+    priority: "low",
+    developers: [{ id: "dev3", name: "Sari Dewi", role: "developer" }],
+    qcAssignees: [],
+    tags: ["Frontend", "Mobile"],
+    status: "DEVELOPMENT",
+    receivedDate: "2026-03-12",
+    movedDate: "2026-03-19",
+    auditTrail: [
+      { action: "Task created", by: "System", timestamp: "2026-03-12T09:00:00" },
+      { action: "Moved to DEVELOPMENT", by: "Sari Dewi", timestamp: "2026-03-19T10:00:00" },
+    ],
+  },
+  {
+    id: "7",
+    title: "Database Query Optimization",
+    projectName: "Analytics Portal",
+    description:
+      "Optimisasi query database untuk halaman reporting yang lambat. Tambahkan indexing yang tepat dan refactor complex joins menjadi lebih efisien.",
+    taskType: "patch",
+    priority: "high",
+    developers: [
+      { id: "dev10", name: "Hendra Gunawan", role: "developer" },
+      { id: "dev6", name: "Andi Pratama", role: "developer" },
+    ],
+    qcAssignees: [{ id: "qc3", name: "Rizky Firmansyah", role: "qc" }],
+    tags: ["Backend", "Performance"],
+    status: "QC TEST",
+    receivedDate: "2026-03-08",
+    movedDate: "2026-03-21",
+    auditTrail: [
+      { action: "Task created", by: "System", timestamp: "2026-03-08T09:00:00" },
+      { action: "Moved to DEVELOPMENT", by: "Hendra Gunawan", timestamp: "2026-03-10T10:00:00" },
+      { action: "Moved to QC TEST", by: "Andi Pratama", timestamp: "2026-03-21T15:00:00" },
+    ],
+  },
+  {
+    id: "8",
+    title: "Email Notification System",
+    projectName: "CRM System",
+    description:
+      "Sistem notifikasi email untuk berbagai event: registrasi, transaksi, dan reminder. Menggunakan template engine untuk customizable email content.",
+    taskType: "task",
+    priority: "medium",
+    developers: [
+      { id: "dev2", name: "Dewi Lestari", role: "developer" },
+      { id: "dev4", name: "Andi Wijaya", role: "developer" },
+    ],
+    qcAssignees: [],
+    tags: ["Backend", "Integration"],
+    status: "DEVELOPMENT",
+    receivedDate: "2026-03-14",
+    movedDate: "2026-03-20",
+    auditTrail: [
+      { action: "Task created", by: "System", timestamp: "2026-03-14T09:00:00" },
+      { action: "Moved to DEVELOPMENT", by: "Dewi Lestari", timestamp: "2026-03-20T11:00:00" },
+    ],
+  },
+  {
+    id: "9",
+    title: "Unit Testing Coverage",
+    projectName: "Core Library",
+    description:
+      "Meningkatkan code coverage unit testing dari 60% menjadi minimal 80%. Fokus pada business logic dan utility functions yang critical.",
+    taskType: "task",
+    priority: "low",
+    developers: [{ id: "dev5", name: "Putri Maharani", role: "developer" }],
+    qcAssignees: [],
+    tags: ["Testing", "Quality"],
+    status: "BACKLOG",
+    receivedDate: "2026-03-18",
+    auditTrail: [
+      { action: "Task created", by: "System", timestamp: "2026-03-18T14:00:00" },
+    ],
+  },
+  {
+    id: "10",
+    title: "User Profile Feature",
+    projectName: "Customer Portal",
+    description:
+      "Fitur profil user yang lengkap dengan avatar upload, edit informasi personal, dan privacy settings. Termasuk activity log dan connected devices.",
+    taskType: "task",
+    priority: "medium",
+    developers: [
+      { id: "dev7", name: "Rini Kusuma", role: "developer" },
+      { id: "dev8", name: "Fajar Nugroho", role: "developer" },
+      { id: "dev9", name: "Diana Putri", role: "developer" },
+    ],
+    qcAssignees: [
+      { id: "qc4", name: "Dewi Anggraini", role: "qc" },
+      { id: "qc5", name: "Eko Prasetyo", role: "qc" },
+    ],
+    tags: ["Frontend", "Backend"],
+    status: "DONE",
+    receivedDate: "2026-03-05",
+    movedDate: "2026-03-23",
+    isUploaded: true,
+    auditTrail: [
+      { action: "Task created", by: "System", timestamp: "2026-03-05T09:00:00" },
+      { action: "Moved to DEVELOPMENT", by: "Rini Kusuma", timestamp: "2026-03-07T10:00:00" },
+      { action: "Moved to QC TEST", by: "Diana Putri", timestamp: "2026-03-18T14:00:00" },
+      { action: "Moved to DONE", by: "Eko Prasetyo", timestamp: "2026-03-23T16:00:00" },
+      { action: "Marked as Uploaded", by: "Rini Kusuma", timestamp: "2026-03-23T17:00:00" },
+    ],
+  },
+];

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDownAZ, Calendar, LogOut, User, Maximize2, Minimize2, LayoutDashboard } from "lucide-react";
+import { ArrowDownAZ, Calendar, LogOut, User, Maximize2, Minimize2 } from "lucide-react";
 import { KanbanColumn } from "./kanban-column";
 import { Button } from "@/components/ui/button";
 import type { Task, TaskStatus, TaskType, PriorityLevel, Person } from "@/lib/kanban-types";
@@ -20,6 +20,7 @@ export function KanbanBoard() {
   const [activeUser, setActiveUser] = useState<Person | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Check for logged in user
   useEffect(() => {
     const storedUser = sessionStorage.getItem("activeUser");
     if (storedUser) {
@@ -36,34 +37,103 @@ export function KanbanBoard() {
   };
 
   const expandAllCards = () => {
-    setTasks((prevTasks) => prevTasks.map((task) => ({ ...task, isCollapsed: false })));
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => ({
+        ...task,
+        isCollapsed: false,
+      }))
+    );
   };
 
   const shrinkAllCards = () => {
-    setTasks((prevTasks) => prevTasks.map((task) => ({ ...task, isCollapsed: true })));
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => ({
+        ...task,
+        isCollapsed: true,
+      }))
+    );
   };
 
-  // --- LOGIKA MOVE, ASSIGN, DLL TETAP SAMA SEPERTI KODE KAMU ---
-  // (Pastikan fungsi moveTask, assignQC, assignDeveloper tetap ada di bawah sini)
-  
   const moveTask = (taskId: string, direction: "forward" | "backward") => {
     if (!activeUser) return;
+
     setTasks((prevTasks) =>
       prevTasks.map((task) => {
         if (task.id !== taskId) return task;
+
         const currentIndex = STATUSES.indexOf(task.status);
-        const newIndex = direction === "forward" ? currentIndex + 1 : currentIndex - 1;
+        const newIndex =
+          direction === "forward" ? currentIndex + 1 : currentIndex - 1;
+
         if (newIndex < 0 || newIndex >= STATUSES.length) return task;
+
         const newStatus = STATUSES[newIndex];
+        const timestamp = new Date().toISOString();
+
         return {
           ...task,
           status: newStatus,
           movedDate: new Date().toISOString().split("T")[0],
-          auditTrail: [...task.auditTrail, { 
-            action: `Moved to ${newStatus}`, 
-            by: activeUser.name, 
-            timestamp: new Date().toISOString() 
-          }],
+          auditTrail: [
+            ...task.auditTrail,
+            {
+              action: `Moved to ${newStatus}`,
+              by: activeUser.name,
+              timestamp,
+            },
+          ],
+        };
+      })
+    );
+  };
+
+  const assignQC = (taskId: string, qcId: string) => {
+    const qc = availableQCers.find((q) => q.id === qcId);
+    if (!qc || !activeUser) return;
+
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => {
+        if (task.id !== taskId) return task;
+        if (task.qcAssignees.some((q) => q.id === qcId)) return task;
+
+        return {
+          ...task,
+          qcAssignees: [...task.qcAssignees, qc],
+          auditTrail: [
+            ...task.auditTrail,
+            {
+              action: `Assigned QC: ${qc.name}`,
+              by: activeUser.name,
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        };
+      })
+    );
+  };
+
+  const removeQC = (taskId: string, qcId: string) => {
+    if (!activeUser) return;
+
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => {
+        if (task.id !== taskId) return task;
+
+        const removedQC = task.qcAssignees.find((qc) => qc.id === qcId);
+
+        return {
+          ...task,
+          qcAssignees: task.qcAssignees.filter((qc) => qc.id !== qcId),
+          auditTrail: removedQC
+            ? [
+                ...task.auditTrail,
+                {
+                  action: `Removed QC: ${removedQC.name}`,
+                  by: activeUser.name,
+                  timestamp: new Date().toISOString(),
+                },
+              ]
+            : task.auditTrail,
         };
       })
     );
@@ -72,82 +142,277 @@ export function KanbanBoard() {
   const assignDeveloper = (taskId: string, devId: string) => {
     const dev = availableDevelopers.find((d) => d.id === devId);
     if (!dev || !activeUser) return;
+
     setTasks((prevTasks) =>
       prevTasks.map((task) => {
-        if (task.id !== taskId || task.developers.some((d) => d.id === devId)) return task;
+        if (task.id !== taskId) return task;
+        if (task.developers.some((d) => d.id === devId)) return task;
+
         return {
           ...task,
           developers: [...task.developers, dev],
-          auditTrail: [...task.auditTrail, { action: `Assigned Dev: ${dev.name}`, by: activeUser.name, timestamp: new Date().toISOString() }],
+          auditTrail: [
+            ...task.auditTrail,
+            {
+              action: `Assigned Developer: ${dev.name}`,
+              by: activeUser.name,
+              timestamp: new Date().toISOString(),
+            },
+          ],
         };
       })
     );
   };
 
-  // --- SORTING LOGIC ---
+  const removeDeveloper = (taskId: string, devId: string) => {
+    if (!activeUser) return;
+
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => {
+        if (task.id !== taskId) return task;
+
+        const removedDev = task.developers.find((dev) => dev.id === devId);
+
+        return {
+          ...task,
+          developers: task.developers.filter((dev) => dev.id !== devId),
+          auditTrail: removedDev
+            ? [
+                ...task.auditTrail,
+                {
+                  action: `Removed Developer: ${removedDev.name}`,
+                  by: activeUser.name,
+                  timestamp: new Date().toISOString(),
+                },
+              ]
+            : task.auditTrail,
+        };
+      })
+    );
+  };
+
+  const toggleUploaded = (taskId: string) => {
+    if (!activeUser) return;
+
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => {
+        if (task.id !== taskId) return task;
+
+        const newUploaded = !task.isUploaded;
+
+        return {
+          ...task,
+          isUploaded: newUploaded,
+          auditTrail: [
+            ...task.auditTrail,
+            {
+              action: newUploaded ? "Marked as Uploaded" : "Unmarked as Uploaded",
+              by: activeUser.name,
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        };
+      })
+    );
+  };
+
+  const toggleCollapsed = (taskId: string) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => {
+        if (task.id !== taskId) return task;
+        return {
+          ...task,
+          isCollapsed: !task.isCollapsed,
+        };
+      })
+    );
+  };
+
+  const changePriority = (taskId: string, taskType: TaskType, priority: PriorityLevel) => {
+    if (!activeUser) return;
+
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => {
+        if (task.id !== taskId) return task;
+
+        return {
+          ...task,
+          taskType,
+          priority,
+          auditTrail: [
+            ...task.auditTrail,
+            {
+              action: `Changed priority to ${taskType}-${priority}`,
+              by: activeUser.name,
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        };
+      })
+    );
+  };
+
   const sortTasks = (tasksToSort: Task[]): Task[] => {
     return [...tasksToSort].sort((a, b) => {
       if (sortBy === "date") {
-        const dateA = a.status === "BACKLOG" ? a.receivedDate : (a.movedDate || a.receivedDate);
-        const dateB = b.status === "BACKLOG" ? b.receivedDate : (b.movedDate || b.receivedDate);
+        const dateA =
+          a.status === "BACKLOG"
+            ? a.receivedDate
+            : a.movedDate || a.receivedDate;
+        const dateB =
+          b.status === "BACKLOG"
+            ? b.receivedDate
+            : b.movedDate || b.receivedDate;
         return new Date(dateB).getTime() - new Date(dateA).getTime();
+      } else {
+        return a.title.localeCompare(b.title);
       }
-      return a.title.localeCompare(b.title);
     });
   };
 
-  const getTasksByStatus = (status: TaskStatus) => sortTasks(tasks.filter((t) => t.status === status));
+  const getTasksByStatus = (status: TaskStatus) => {
+    const filtered = tasks.filter((task) => task.status === status);
+    return sortTasks(filtered);
+  };
 
-  if (isLoading || !activeUser) return <div className="p-10 text-center">Loading...</div>;
+  const taskCounts = useMemo(() => {
+    return STATUSES.reduce(
+      (acc, status) => {
+        acc[status] = tasks.filter((t) => t.status === status).length;
+        return acc;
+      },
+      {} as Record<TaskStatus, number>
+    );
+  }, [tasks]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!activeUser) {
+    return null;
+  }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-[#0a0a0a]">
-      {/* HEADER REVISI: Sejajar & Rapi */}
-      <div className="flex items-center justify-between border-b border-white/5 bg-black/40 px-6 py-4 backdrop-blur-md">
-        <div className="flex items-center gap-4">
-          <div className="bg-primary/20 p-2 rounded-lg">
-            <LayoutDashboard className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-white">Dev-QC Workflow</h1>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold">Management Dashboard</p>
-          </div>
-        </div>
+    <div className="flex flex-1 flex-col overflow-hidden">
+      {/* Header with Title, Sort Controls & User Info */}
+      <div className="flex items-center justify-between border-b border-border bg-secondary/30 px-6 py-3">
+        {/* Left side - Title */}
+        <h1 className="text-xl font-semibold text-foreground">Dev-QC Workflow</h1>
 
-        <div className="flex items-center gap-6">
-          {/* Controls Group */}
-          <div className="flex items-center gap-2 bg-white/5 p-1 rounded-xl border border-white/10">
-            <div className="flex items-center gap-1 px-2 border-r border-white/10 mr-1">
-               <Button variant="ghost" size="sm" onClick={() => setSortBy("date")} className={sortBy === 'date' ? "bg-primary text-white" : ""}>Date</Button>
-               <Button variant="ghost" size="sm" onClick={() => setSortBy("name")} className={sortBy === 'name' ? "bg-primary text-white" : ""}>Name</Button>
+        {/* Right side - Controls & User */}
+        <div className="flex items-center gap-4">
+          {/* Sort Controls */}
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">Sort by:</span>
+            <div className="flex rounded-lg border border-border bg-card overflow-hidden">
+              <button
+                onClick={() => setSortBy("date")}
+                className={`flex items-center gap-2 px-3 py-1.5 text-sm transition-colors ${
+                  sortBy === "date"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-secondary"
+                }`}
+              >
+                <Calendar className="h-4 w-4" />
+                Date
+              </button>
+              <button
+                onClick={() => setSortBy("name")}
+                className={`flex items-center gap-2 px-3 py-1.5 text-sm transition-colors ${
+                  sortBy === "name"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-secondary"
+                }`}
+              >
+                <ArrowDownAZ className="h-4 w-4" />
+                Name (A-Z)
+              </button>
             </div>
-            <Button variant="ghost" size="sm" onClick={expandAllCards} className="h-8 gap-1"><Maximize2 className="h-3 w-3" /> Expand All</Button>
-            <Button variant="ghost" size="sm" onClick={shrinkAllCards} className="h-8 gap-1"><Minimize2 className="h-3 w-3" /> Shrink All</Button>
           </div>
+
+          {/* Expand/Shrink All Buttons */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={expandAllCards}
+              className="gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <Maximize2 className="h-4 w-4" />
+              Expand All
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={shrinkAllCards}
+              className="gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <Minimize2 className="h-4 w-4" />
+              Shrink All
+            </Button>
+          </div>
+
+          {/* Separator */}
+          <div className="h-6 w-px bg-border" />
 
           {/* User Info & Logout */}
-          <div className="flex items-center gap-3 pl-4 border-l border-white/10">
-            <div className="text-right">
-              <p className="text-sm font-bold text-white leading-none">{activeUser.name}</p>
-              <p className="text-[10px] text-primary uppercase font-black">{activeUser.role}</p>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 rounded-lg bg-card border border-border px-3 py-1.5">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-foreground">
+                {activeUser.name}
+              </span>
+              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                activeUser.role === "developer"
+                  ? "bg-blue-500/20 text-blue-400"
+                  : "bg-amber-500/20 text-amber-400"
+              }`}>
+                {activeUser.role === "developer" ? "Dev" : "QC"}
+              </span>
             </div>
-            <Button variant="destructive" size="sm" onClick={handleLogout} className="h-8 gap-2 font-bold bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20">
-              <LogOut className="h-3 w-3" /> LOGOUT
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
             </Button>
           </div>
         </div>
       </div>
 
+      {/* Task Count Bar */}
+      <div className="flex items-center gap-4 border-b border-border bg-secondary/20 px-6 py-2">
+        <span className="text-sm text-muted-foreground">
+          Total: <span className="font-medium text-foreground">{tasks.length}</span> tasks
+        </span>
+        <div className="h-4 w-px bg-border" />
+        {STATUSES.map((status) => (
+          <span key={status} className="text-xs text-muted-foreground">
+            {status}: <span className="font-medium text-foreground">{taskCounts[status]}</span>
+          </span>
+        ))}
+      </div>
+
       {/* Kanban Columns */}
-      <div className="flex min-h-0 flex-1 gap-6 overflow-x-auto p-6 scrollbar-hide">
+      <div className="flex min-h-0 flex-1 gap-6 overflow-x-auto p-6">
         {STATUSES.map((status, index) => (
           <KanbanColumn
             key={status}
             title={status}
             tasks={getTasksByStatus(status)}
             onMoveTask={moveTask}
-            onAssignDeveloper={assignDeveloper} // Pastikan ini dipassing!
             onAssignQC={assignQC}
+            onRemoveQC={removeQC}
+            onAssignDeveloper={assignDeveloper}
+            onRemoveDeveloper={removeDeveloper}
             onToggleUploaded={toggleUploaded}
             onToggleCollapsed={toggleCollapsed}
             onChangePriority={changePriority}
