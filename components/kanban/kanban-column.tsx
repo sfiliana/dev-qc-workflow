@@ -10,11 +10,11 @@ interface KanbanColumnProps {
   onMoveTask: (taskId: string, direction: "forward" | "backward") => void;
   onAssignQC: (taskId: string, qcId: string) => void;
   onRemoveQC: (taskId: string, qcId: string) => void;
+  onAssignDeveloper: (taskId: string, devId: string) => void; // Tambahan
+  onRemoveDeveloper: (taskId: string, devId: string) => void; // Tambahan
   onToggleUploaded: (taskId: string) => void;
   onToggleCollapsed: (taskId: string) => void;
   onChangePriority: (taskId: string, taskType: TaskType, priority: PriorityLevel) => void;
-  onAssignDeveloper: (taskId: string, devId: string) => void; 
-  onRemoveDeveloper: (taskId: string, devId: string) => void; 
   statusIndex: number;
   totalStatuses: number;
 }
@@ -58,7 +58,7 @@ export function KanbanColumn({
   onMoveTask,
   onAssignQC,
   onRemoveQC,
-  onAssignDeveloper, 
+  onAssignDeveloper,
   onRemoveDeveloper,
   onToggleUploaded,
   onToggleCollapsed,
@@ -111,10 +111,10 @@ export function KanbanColumn({
               canMoveBackward={canMoveBackward}
               onMoveForward={() => onMoveTask(task.id, "forward")}
               onMoveBackward={() => onMoveTask(task.id, "backward")}
-              onAssignDeveloper={(devId) => onAssignDeveloper(task.id, devId)} 
-              onRemoveDeveloper={(devId) => onRemoveDeveloper(task.id, devId)} 
               onAssignQC={(qcId) => onAssignQC(task.id, qcId)}
               onRemoveQC={(qcId) => onRemoveQC(task.id, qcId)}
+              onAssignDeveloper={(devId) => onAssignDeveloper(task.id, devId)}
+              onRemoveDeveloper={(devId) => onRemoveDeveloper(task.id, devId)}
               onToggleUploaded={() => onToggleUploaded(task.id)}
               onToggleCollapsed={() => onToggleCollapsed(task.id)}
               onChangePriority={(taskType, priority) => onChangePriority(task.id, taskType, priority)}
