@@ -32,6 +32,7 @@ import {
   priorityConfig,
   priorityOptions,
   availableQCers,
+  availableDevelopers, 
   getInitials,
   getAvatarColor,
   formatDate,
@@ -44,6 +45,8 @@ interface TaskCardProps {
   onMoveBackward?: () => void;
   onAssignQC?: (qcId: string) => void;
   onRemoveQC?: (qcId: string) => void;
+  onAssignDeveloper?: (devId: string) => void; 
+  onRemoveDeveloper?: (devId: string) => void; 
   onToggleUploaded?: () => void;
   onToggleCollapsed?: () => void;
   onChangePriority?: (taskType: TaskType, priority: PriorityLevel) => void;
@@ -124,8 +127,87 @@ export function TaskCard({
 }: TaskCardProps) {
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
   const [isQCPopoverOpen, setIsQCPopoverOpen] = useState(false);
+  const [isDevPopoverOpen, setIsDevPopoverOpen] = useState(false); 
   const [isPriorityPopoverOpen, setIsPriorityPopoverOpen] = useState(false);
 
+  // Logic for filtering available developers
+  const assignedDevIds = new Set(task.developers.map((d) => d.id));
+  const availableDevsToAssign = availableDevelopers.filter(
+    (d) => !assignedDevIds.has(d.id)
+  );
+{/* Developer Assignees Section */}
+{(task.status === "BACKLOG" || task.status === "DEVELOPMENT") && (
+  <div className="mb-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
+    <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center gap-2">
+        <UserPlus className="h-4 w-4 text-blue-400" />
+        <span className="text-xs font-medium text-blue-400">
+          Dev Assignees
+        </span>
+      </div>
+      <Popover open={isDevPopoverOpen} onOpenChange={setIsDevPopoverOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/20"
+          >
+            <UserPlus className="h-3 w-3 mr-1" />
+            Add Dev
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-64 p-0" align="end" side="bottom">
+          <div className="p-3 border-b border-border">
+            <h4 className="text-sm font-medium text-foreground">Pilih Developer</h4>
+          </div>
+          <div className="max-h-48 overflow-y-auto p-2">
+            {availableDevsToAssign.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-3">
+                Semua Developer sudah ditugaskan
+              </p>
+            ) : (
+              availableDevsToAssign.map((dev) => (
+                <button
+                  key={dev.id}
+                  onClick={() => {
+                    onAssignDeveloper?.(dev.id);
+                    setIsDevPopoverOpen(false);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-secondary transition-colors"
+                >
+                  <div className={cn("flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold text-white", getAvatarColor(dev.id))}>
+                    {getInitials(dev.name)}
+                  </div>
+                  <span className="text-foreground">{dev.name}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+
+    {task.developers.length > 0 ? (
+      <div className="flex flex-wrap gap-2">
+        {task.developers.map((person) => (
+          <div key={person.id} className="flex items-center gap-1.5 rounded-full bg-blue-500/20 pl-1 pr-2 py-1">
+            <ClickableAvatar person={person} size="sm" borderColor="border-blue-500/30" />
+            <span className="text-xs text-blue-300">{person.name.split(" ")[0]}</span>
+            <button
+              onClick={() => onRemoveDeveloper?.(person.id)}
+              className="ml-1 rounded-full p-0.5 text-blue-400/70 hover:text-blue-300 hover:bg-blue-500/30 transition-colors"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="text-xs text-blue-400/70 italic">Belum ada Dev yang ditugaskan</p>
+    )}
+  </div>
+)}
+  
   const isQcColumn = task.status === "QC TEST";
   const isBacklog = task.status === "BACKLOG";
   const isDone = task.status === "DONE";
