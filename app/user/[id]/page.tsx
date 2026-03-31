@@ -23,6 +23,8 @@ import {
   Check,
   History,
   User,
+  Pencil,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -65,15 +67,17 @@ const statusColors: Record<
   },
 };
 
-// Timer Component
+// Timer Component with Manual Edit Feature
 function TaskTimer({ taskId }: { taskId: string }) {
   const [seconds, setSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState("");
+  
+  // State for manual input
+  const [editHours, setEditHours] = useState("0");
+  const [editMinutes, setEditMinutes] = useState("0");
 
   useEffect(() => {
-    // Load saved timer from sessionStorage
     const savedTime = sessionStorage.getItem(`timer-${taskId}`);
     if (savedTime) {
       setSeconds(parseInt(savedTime, 10));
@@ -82,7 +86,6 @@ function TaskTimer({ taskId }: { taskId: string }) {
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
-
     if (isRunning) {
       interval = setInterval(() => {
         setSeconds((prev) => {
@@ -92,7 +95,6 @@ function TaskTimer({ taskId }: { taskId: string }) {
         });
       }, 1000);
     }
-
     return () => {
       if (interval) clearInterval(interval);
     };
@@ -106,27 +108,26 @@ function TaskTimer({ taskId }: { taskId: string }) {
   }, []);
 
   const handleReset = () => {
-    setSeconds(0);
-    setIsRunning(false);
-    sessionStorage.removeItem(`timer-${taskId}`);
+    if (confirm("Reset timer?")) {
+      setSeconds(0);
+      setIsRunning(false);
+      sessionStorage.removeItem(`timer-${taskId}`);
+    }
   };
 
   const startEditing = () => {
-    setIsRunning(false);
-    setEditValue(formatTime(seconds));
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    setEditHours(h.toString());
+    setEditMinutes(m.toString());
     setIsEditing(true);
+    setIsRunning(false); // Pause while editing
   };
 
   const saveEdit = () => {
-    const parts = editValue.split(':');
-    if (parts.length === 3) {
-      const h = parseInt(parts[0], 10) || 0;
-      const m = parseInt(parts[1], 10) || 0;
-      const s = parseInt(parts[2], 10) || 0;
-      const totalSeconds = (h * 3600) + (m * 60) + s;
-      setSeconds(totalSeconds);
-      sessionStorage.setItem(`timer-${taskId}`, totalSeconds.toString());
-    }
+    const newSeconds = (parseInt(editHours) || 0) * 3600 + (parseInt(editMinutes) || 0) * 60;
+    setSeconds(newSeconds);
+    sessionStorage.setItem(`timer-${taskId}`, newSeconds.toString());
     setIsEditing(false);
   };
 
@@ -135,70 +136,68 @@ function TaskTimer({ taskId }: { taskId: string }) {
       <Timer className="h-4 w-4 text-muted-foreground" />
       
       {isEditing ? (
-        <input
-          type="text"
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          className="bg-background border border-primary/50 rounded px-1 font-mono text-sm w-[85px] focus:outline-none"
-          autoFocus
-          onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
-        />
+        <div className="flex items-center gap-1">
+          <input
+            type="number"
+            value={editHours}
+            onChange={(e) => setEditHours(e.target.value)}
+            className="w-10 rounded border border-border bg-background px-1 text-xs text-center"
+            placeholder="HH"
+          />
+          <span className="text-xs">:</span>
+          <input
+            type="number"
+            value={editMinutes}
+            onChange={(e) => setEditMinutes(e.target.value)}
+            className="w-10 rounded border border-border bg-background px-1 text-xs text-center"
+            placeholder="MM"
+          />
+          <button onClick={saveEdit} className="ml-1 text-emerald-400 hover:text-emerald-300">
+            <Check className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={() => setIsEditing(false)} className="text-rose-400 hover:text-rose-300">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
       ) : (
         <span className="font-mono text-sm text-foreground min-w-[70px]">
           {formatTime(seconds)}
         </span>
       )}
 
-      <div className="flex items-center gap-1">
-        {/* Tombol Edit / Save */}
-        {isEditing ? (
-          <button
-            onClick={saveEdit}
-            className="rounded-md p-1 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
-            title="Save Time"
-          >
-            <Check className="h-3.5 w-3.5" />
-          </button>
-        ) : (
-          <button
-            onClick={startEditing}
-            className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-            title="Edit Time"
-          >
-            {/* Menggunakan icon Pencil (jangan lupa import Pencil di bagian atas file jika belum ada) */}
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-          </button>
+      <div className="flex items-center gap-1 ml-auto">
+        {!isEditing && (
+          <>
+            <button
+              onClick={() => setIsRunning(!isRunning)}
+              className={cn(
+                "rounded-md p-1 transition-colors",
+                isRunning
+                  ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
+                  : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+              )}
+            >
+              {isRunning ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+            </button>
+            <button
+              onClick={handleReset}
+              className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              title="Reset"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={startEditing}
+              className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              title="Edit Time"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          </>
         )}
-
-        <button
-          onClick={() => setIsRunning(!isRunning)}
-          disabled={isEditing}
-          className={cn(
-            "rounded-md p-1 transition-colors",
-            isRunning
-              ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
-              : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30",
-            isEditing && "opacity-50 cursor-not-allowed"
-          )}
-          title={isRunning ? "Pause" : "Start"}
-        >
-          {isRunning ? (
-            <Pause className="h-3.5 w-3.5" />
-          ) : (
-            <Play className="h-3.5 w-3.5" />
-          )}
-        </button>
-        <button
-          onClick={handleReset}
-          className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-          title="Reset"
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-        </button>
       </div>
     </div>
   );
-}
 }
 
 function UserTaskCard({
@@ -211,31 +210,21 @@ function UserTaskCard({
   onToggleCollapsed: () => void;
 }) {
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
-  const priorityKey =
-    `${task.taskType}-${task.priority}` as keyof typeof priorityConfig;
+  const priorityKey = `${task.taskType}-${task.priority}` as keyof typeof priorityConfig;
   const priority = priorityConfig[priorityKey];
   const statusStyle = statusColors[task.status];
   const isBacklog = task.status === "BACKLOG";
   const isDone = task.status === "DONE";
 
-  // Collapsed view
   if (task.isCollapsed && !task.isUploaded) {
     return (
       <div className="rounded-lg border border-border bg-card p-3 shadow-lg transition-all hover:border-primary/30">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] text-muted-foreground truncate">
-              {task.projectName}
-            </p>
-            <h3 className="text-sm font-medium text-card-foreground truncate">
-              {task.title}
-            </h3>
+            <p className="text-[10px] text-muted-foreground truncate">{task.projectName}</p>
+            <h3 className="text-sm font-medium text-card-foreground truncate">{task.title}</h3>
           </div>
-          <button
-            onClick={onToggleCollapsed}
-            className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-            title="Expand card"
-          >
+          <button onClick={onToggleCollapsed} className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-secondary transition-colors">
             <Maximize2 className="h-4 w-4" />
           </button>
         </div>
@@ -243,7 +232,6 @@ function UserTaskCard({
     );
   }
 
-  // Uploaded view - green shrunk card
   if (task.isUploaded) {
     return (
       <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 shadow-lg transition-all">
@@ -253,17 +241,11 @@ function UserTaskCard({
               <Check className="h-3.5 w-3.5 text-emerald-400" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] text-emerald-400/70 truncate">
-                {task.projectName}
-              </p>
-              <h3 className="text-sm font-medium text-emerald-400 truncate">
-                {task.title}
-              </h3>
+              <p className="text-[10px] text-emerald-400/70 truncate">{task.projectName}</p>
+              <h3 className="text-sm font-medium text-emerald-400 truncate">{task.title}</h3>
             </div>
           </div>
-          <span className="text-[10px] text-emerald-400/70 px-2 py-0.5 rounded-full bg-emerald-500/20">
-            Uploaded
-          </span>
+          <span className="text-[10px] text-emerald-400/70 px-2 py-0.5 rounded-full bg-emerald-500/20">Uploaded</span>
         </div>
       </div>
     );
@@ -271,162 +253,66 @@ function UserTaskCard({
 
   return (
     <div className="rounded-lg border border-border bg-card p-4 shadow-lg transition-all hover:border-primary/30">
-      {/* Header */}
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] text-muted-foreground mb-1">
-            {task.projectName}
-          </p>
-          <h3 className="font-medium text-card-foreground leading-snug text-balance">
-            {task.title}
-          </h3>
+          <p className="text-[10px] text-muted-foreground mb-1">{task.projectName}</p>
+          <h3 className="font-medium text-card-foreground leading-snug">{task.title}</h3>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <span
-            className={cn(
-              "rounded-full border px-2 py-0.5 text-[10px] font-medium whitespace-nowrap",
-              statusStyle.bg,
-              statusStyle.text,
-              statusStyle.border
-            )}
-          >
-            {task.status}
-          </span>
-          <span
-            className={cn(
-              "rounded-full border px-2 py-0.5 text-[10px] font-medium whitespace-nowrap",
-              priority.bgColor,
-              priority.textColor,
-              priority.borderColor
-            )}
-          >
-            {priority.label}
-          </span>
-          <button
-            onClick={onToggleCollapsed}
-            className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-            title="Shrink card"
-          >
-            <Minimize2 className="h-3.5 w-3.5" />
-          </button>
+          <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-medium", statusStyle.bg, statusStyle.text, statusStyle.border)}>{task.status}</span>
+          <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-medium", priority.bgColor, priority.textColor, priority.borderColor)}>{priority.label}</span>
+          <button onClick={onToggleCollapsed} className="rounded-md p-1 text-muted-foreground hover:bg-secondary transition-colors"><Minimize2 className="h-3.5 w-3.5" /></button>
         </div>
       </div>
 
-      {/* Timer */}
       <div className="mb-3">
         <TaskTimer taskId={task.id} />
       </div>
 
-      {/* Date */}
       <div className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
         <Calendar className="h-3 w-3" />
-        <span>
-          {isBacklog
-            ? `Received: ${formatDate(task.receivedDate)}`
-            : `Moved: ${formatDate(task.movedDate || task.receivedDate)}`}
-        </span>
+        <span>{isBacklog ? `Received: ${formatDate(task.receivedDate)}` : `Moved: ${formatDate(task.movedDate || task.receivedDate)}`}</span>
       </div>
 
-      {/* Collapsible Description */}
       <div className="mb-3">
-        <button
-          onClick={() => setIsDescriptionOpen(!isDescriptionOpen)}
-          className="flex w-full items-center justify-between rounded-md bg-secondary/50 px-3 py-2 text-left text-sm text-muted-foreground hover:bg-secondary transition-colors"
-        >
+        <button onClick={() => setIsDescriptionOpen(!isDescriptionOpen)} className="flex w-full items-center justify-between rounded-md bg-secondary/50 px-3 py-2 text-sm text-muted-foreground hover:bg-secondary transition-colors">
           <span>Deskripsi</span>
-          {isDescriptionOpen ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
+          {isDescriptionOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
-        <div
-          className={cn(
-            "overflow-hidden transition-all duration-200",
-            isDescriptionOpen ? "max-h-96 mt-2" : "max-h-0"
-          )}
-        >
-          <div className="rounded-md bg-secondary/30 px-3 py-2 space-y-3">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {task.description}
-            </p>
-
-            {/* Audit Trail */}
+        {isDescriptionOpen && (
+          <div className="mt-2 rounded-md bg-secondary/30 px-3 py-2 space-y-3">
+            <p className="text-sm text-muted-foreground leading-relaxed">{task.description}</p>
             {task.auditTrail.length > 0 && (
               <div className="border-t border-border pt-3">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <History className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-xs font-medium text-muted-foreground">
-                    Activity Log
-                  </span>
-                </div>
+                <div className="flex items-center gap-1.5 mb-2"><History className="h-3 w-3" /><span className="text-xs font-medium">Activity Log</span></div>
                 <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                  {task.auditTrail
-                    .slice()
-                    .reverse()
-                    .map((entry, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-start gap-2 text-[11px]"
-                      >
-                        <span className="shrink-0 text-muted-foreground/60">
-                          {formatDateTime(entry.timestamp)}
-                        </span>
-                        <span className="text-muted-foreground">
-                          {entry.action}
-                        </span>
-                        <span className="text-primary/80">by {entry.by}</span>
-                      </div>
-                    ))}
+                  {task.auditTrail.slice().reverse().map((entry, idx) => (
+                    <div key={idx} className="flex items-start gap-2 text-[11px]">
+                      <span className="shrink-0 text-muted-foreground/60">{formatDateTime(entry.timestamp)}</span>
+                      <span className="text-muted-foreground">{entry.action}</span>
+                      <span className="text-primary/80">by {entry.by}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Tags */}
       <div className="flex flex-wrap gap-1.5 mb-3">
         {task.tags.map((tag) => (
-          <span
-            key={tag}
-            className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
-          >
-            <Tag className="h-3 w-3" />
-            {tag}
-          </span>
+          <span key={tag} className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"><Tag className="h-3 w-3" />{tag}</span>
         ))}
       </div>
 
-      {/* Footer with Upload checkbox for DONE tasks */}
       {isDone && (
         <div className="border-t border-border pt-3">
           <label className="flex items-center gap-2 cursor-pointer group/upload">
-            <div
-              className={cn(
-                "flex h-5 w-5 items-center justify-center rounded border transition-colors",
-                task.isUploaded
-                  ? "bg-emerald-500 border-emerald-500"
-                  : "border-muted-foreground/50 hover:border-emerald-500"
-              )}
-              onClick={(e) => {
-                e.preventDefault();
-                onToggleUploaded();
-              }}
-            >
+            <div className={cn("flex h-5 w-5 items-center justify-center rounded border transition-colors", task.isUploaded ? "bg-emerald-500 border-emerald-500" : "border-muted-foreground/50 hover:border-emerald-500")} onClick={(e) => { e.preventDefault(); onToggleUploaded(); }}>
               {task.isUploaded && <Check className="h-3 w-3 text-white" />}
             </div>
-            <span
-              className={cn(
-                "text-xs transition-colors",
-                task.isUploaded
-                  ? "text-emerald-400"
-                  : "text-muted-foreground group-hover/upload:text-emerald-400"
-              )}
-            >
-              <Upload className="h-3 w-3 inline mr-1" />
-              Mark as Uploaded
-            </span>
+            <span className={cn("text-xs transition-colors", task.isUploaded ? "text-emerald-400" : "text-muted-foreground group-hover/upload:text-emerald-400")}><Upload className="h-3 w-3 inline mr-1" />Mark as Uploaded</span>
           </label>
         </div>
       )}
@@ -434,11 +320,7 @@ function UserTaskCard({
   );
 }
 
-export default function UserTaskPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function UserTaskPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const user = allUsers.find((u) => u.id === id);
@@ -447,9 +329,7 @@ export default function UserTaskPage({
 
   useEffect(() => {
     const storedUser = sessionStorage.getItem("activeUser");
-    if (storedUser) {
-      setActiveUser(JSON.parse(storedUser));
-    }
+    if (storedUser) setActiveUser(JSON.parse(storedUser));
   }, []);
 
   const handleLogout = () => {
@@ -458,248 +338,86 @@ export default function UserTaskPage({
   };
 
   const toggleUploaded = (taskId: string) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => {
-        if (task.id !== taskId) return task;
-        return {
-          ...task,
-          isUploaded: !task.isUploaded,
-        };
-      })
-    );
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, isUploaded: !t.isUploaded } : t));
   };
 
   const toggleCollapsed = (taskId: string) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => {
-        if (task.id !== taskId) return task;
-        return {
-          ...task,
-          isCollapsed: !task.isCollapsed,
-        };
-      })
-    );
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, isCollapsed: !t.isCollapsed } : t));
   };
 
   const userTasks = useMemo(() => {
     if (!user) return [];
-
-    return tasks.filter((task) => {
-      if (user.role === "developer") {
-        return task.developers.some((dev) => dev.id === id);
-      } else {
-        return task.qcAssignees.some((qc) => qc.id === id);
-      }
-    });
+    return tasks.filter(task => user.role === "developer" ? task.developers.some(d => d.id === id) : task.qcAssignees.some(q => q.id === id));
   }, [user, id, tasks]);
 
   const tasksByStatus = useMemo(() => {
-    const grouped: Record<TaskStatus, Task[]> = {
-      BACKLOG: [],
-      DEVELOPMENT: [],
-      "QC TEST": [],
-      DONE: [],
-    };
-
-    userTasks.forEach((task) => {
-      grouped[task.status].push(task);
-    });
-
+    const grouped: Record<TaskStatus, Task[]> = { BACKLOG: [], DEVELOPMENT: [], "QC TEST": [], DONE: [] };
+    userTasks.forEach(t => grouped[t.status].push(t));
     return grouped;
   }, [userTasks]);
 
-  if (!user) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-2">
-            User tidak ditemukan
-          </h1>
-          <p className="text-muted-foreground mb-4">
-            User dengan ID tersebut tidak ada dalam sistem.
-          </p>
-          <Link href="/">
-            <Button variant="outline">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Kembali ke Dashboard
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  if (!user) return <div className="flex min-h-screen items-center justify-center">User not found</div>;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-10 border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="ghost" size="icon" className="shrink-0">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
+            <Link href="/"><Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button></Link>
             <div className="flex items-center gap-4">
-              <div
-                className={cn(
-                  "flex h-14 w-14 items-center justify-center rounded-full text-xl font-bold text-white",
-                  getAvatarColor(user.id)
-                )}
-              >
-                {getInitials(user.name)}
-              </div>
+              <div className={cn("flex h-14 w-14 items-center justify-center rounded-full text-xl font-bold text-white", getAvatarColor(user.id))}>{getInitials(user.name)}</div>
               <div>
-                <h1 className="text-xl font-semibold text-foreground">
-                  {user.name}
-                </h1>
+                <h1 className="text-xl font-semibold">{user.name}</h1>
                 <div className="flex items-center gap-2 mt-1">
-                  {user.role === "developer" ? (
-                    <Code2 className="h-4 w-4 text-blue-400" />
-                  ) : (
-                    <ShieldCheck className="h-4 w-4 text-amber-400" />
-                  )}
-                  <span
-                    className={cn(
-                      "text-sm font-medium",
-                      user.role === "developer"
-                        ? "text-blue-400"
-                        : "text-amber-400"
-                    )}
-                  >
-                    {user.role === "developer" ? "Developer" : "QC Engineer"}
-                  </span>
+                  {user.role === "developer" ? <Code2 className="h-4 w-4 text-blue-400" /> : <ShieldCheck className="h-4 w-4 text-amber-400" />}
+                  <span className={cn("text-sm font-medium", user.role === "developer" ? "text-blue-400" : "text-amber-400")}>{user.role === "developer" ? "Developer" : "QC Engineer"}</span>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Logged in user info & Logout */}
           {activeUser && (
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 rounded-lg bg-secondary border border-border px-3 py-1.5">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-foreground">
-                  {activeUser.name}
-                </span>
-                <span
-                  className={`text-xs px-1.5 py-0.5 rounded ${
-                    activeUser.role === "developer"
-                      ? "bg-blue-500/20 text-blue-400"
-                      : "bg-amber-500/20 text-amber-400"
-                  }`}
-                >
-                  {activeUser.role === "developer" ? "Dev" : "QC"}
-                </span>
+              <div className="flex items-center gap-2 rounded-lg bg-secondary border px-3 py-1.5">
+                <User className="h-4 w-4 text-muted-foreground" /><span className="text-sm">{activeUser.name}</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded ${activeUser.role === "developer" ? "bg-blue-500/20 text-blue-400" : "bg-amber-500/20 text-amber-400"}`}>{activeUser.role === "developer" ? "Dev" : "QC"}</span>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className="gap-2 text-muted-foreground hover:text-foreground"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </Button>
+              <Button variant="outline" size="sm" onClick={handleLogout}><LogOut className="h-4 w-4 mr-2" />Logout</Button>
             </div>
           )}
         </div>
       </header>
 
-      {/* Stats */}
       <div className="border-b border-border bg-secondary/30 px-6 py-4">
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
-              Total Tasks:{" "}
-              <span className="font-semibold text-foreground">
-                {userTasks.length}
-              </span>
-            </span>
-          </div>
+          <div className="flex items-center gap-2"><Briefcase className="h-4 w-4 text-muted-foreground" /><span className="text-sm">Total Tasks: <span className="font-semibold">{userTasks.length}</span></span></div>
           <div className="h-4 w-px bg-border" />
-          <div className="flex items-center gap-4">
-            {(Object.keys(tasksByStatus) as TaskStatus[]).map((status) => {
-              const count = tasksByStatus[status].length;
-              if (count === 0) return null;
-              const style = statusColors[status];
-              return (
-                <span
-                  key={status}
-                  className={cn(
-                    "rounded-full border px-2 py-0.5 text-xs font-medium",
-                    style.bg,
-                    style.text,
-                    style.border
-                  )}
-                >
-                  {status}: {count}
-                </span>
-              );
-            })}
+          <div className="flex gap-4">
+            {(Object.keys(tasksByStatus) as TaskStatus[]).map(status => (
+              tasksByStatus[status].length > 0 && <span key={status} className={cn("rounded-full border px-2 py-0.5 text-xs font-medium", statusColors[status].bg, statusColors[status].text, statusColors[status].border)}>{status}: {tasksByStatus[status].length}</span>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Task List */}
       <main className="p-6">
         {userTasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Briefcase className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <h2 className="text-lg font-medium text-foreground mb-1">
-              Tidak ada tugas
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              User ini belum memiliki tugas yang ditugaskan.
-            </p>
-          </div>
+          <div className="py-16 text-center"><Briefcase className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" /><h2 className="text-lg font-medium">Tidak ada tugas</h2></div>
         ) : (
           <div className="space-y-8">
-            {(Object.keys(tasksByStatus) as TaskStatus[]).map((status) => {
-              const statusTasks = tasksByStatus[status];
-              if (statusTasks.length === 0) return null;
-
-              const style = statusColors[status];
-
-              return (
+            {(Object.keys(tasksByStatus) as TaskStatus[]).map(status => (
+              tasksByStatus[status].length > 0 && (
                 <section key={status}>
                   <div className="mb-4 flex items-center gap-3">
-                    <span
-                      className={cn(
-                        "h-2.5 w-2.5 rounded-full",
-                        status === "BACKLOG" && "bg-slate-400",
-                        status === "DEVELOPMENT" && "bg-blue-400",
-                        status === "QC TEST" && "bg-amber-400",
-                        status === "DONE" && "bg-emerald-400"
-                      )}
-                    />
-                    <h2 className="text-lg font-semibold text-foreground">
-                      {status}
-                    </h2>
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-xs font-medium",
-                        style.bg,
-                        style.text
-                      )}
-                    >
-                      {statusTasks.length}
-                    </span>
+                    <span className={cn("h-2.5 w-2.5 rounded-full", status === "BACKLOG" ? "bg-slate-400" : status === "DEVELOPMENT" ? "bg-blue-400" : status === "QC TEST" ? "bg-amber-400" : "bg-emerald-400")} />
+                    <h2 className="text-lg font-semibold">{status}</h2>
+                    <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", statusColors[status].bg, statusColors[status].text)}>{tasksByStatus[status].length}</span>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {statusTasks.map((task) => (
-                      <UserTaskCard
-                        key={task.id}
-                        task={task}
-                        onToggleUploaded={() => toggleUploaded(task.id)}
-                        onToggleCollapsed={() => toggleCollapsed(task.id)}
-                      />
-                    ))}
+                    {tasksByStatus[status].map(task => <UserTaskCard key={task.id} task={task} onToggleUploaded={() => toggleUploaded(task.id)} onToggleCollapsed={() => toggleCollapsed(task.id)} />)}
                   </div>
                 </section>
-              );
-            })}
+              )
+            ))}
           </div>
         )}
       </main>
