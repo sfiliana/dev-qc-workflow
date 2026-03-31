@@ -69,6 +69,8 @@ const statusColors: Record<
 function TaskTimer({ taskId }: { taskId: string }) {
   const [seconds, setSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
 
   useEffect(() => {
     // Load saved timer from sessionStorage
@@ -109,20 +111,74 @@ function TaskTimer({ taskId }: { taskId: string }) {
     sessionStorage.removeItem(`timer-${taskId}`);
   };
 
+  const startEditing = () => {
+    setIsRunning(false);
+    setEditValue(formatTime(seconds));
+    setIsEditing(true);
+  };
+
+  const saveEdit = () => {
+    const parts = editValue.split(':');
+    if (parts.length === 3) {
+      const h = parseInt(parts[0], 10) || 0;
+      const m = parseInt(parts[1], 10) || 0;
+      const s = parseInt(parts[2], 10) || 0;
+      const totalSeconds = (h * 3600) + (m * 60) + s;
+      setSeconds(totalSeconds);
+      sessionStorage.setItem(`timer-${taskId}`, totalSeconds.toString());
+    }
+    setIsEditing(false);
+  };
+
   return (
     <div className="flex items-center gap-2 rounded-lg bg-secondary/50 px-3 py-2">
       <Timer className="h-4 w-4 text-muted-foreground" />
-      <span className="font-mono text-sm text-foreground min-w-[70px]">
-        {formatTime(seconds)}
-      </span>
+      
+      {isEditing ? (
+        <input
+          type="text"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          className="bg-background border border-primary/50 rounded px-1 font-mono text-sm w-[85px] focus:outline-none"
+          autoFocus
+          onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
+        />
+      ) : (
+        <span className="font-mono text-sm text-foreground min-w-[70px]">
+          {formatTime(seconds)}
+        </span>
+      )}
+
       <div className="flex items-center gap-1">
+        {/* Tombol Edit / Save */}
+        {isEditing ? (
+          <button
+            onClick={saveEdit}
+            className="rounded-md p-1 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+            title="Save Time"
+          >
+            <Check className="h-3.5 w-3.5" />
+          </button>
+        ) : (
+          <button
+            onClick={startEditing}
+            className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            title="Edit Time"
+          >
+            {/* Menggunakan icon Pencil (jangan lupa import Pencil di bagian atas file jika belum ada) */}
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+          </button>
+        )}
+
         <button
           onClick={() => setIsRunning(!isRunning)}
+          disabled={isEditing}
           className={cn(
             "rounded-md p-1 transition-colors",
             isRunning
               ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
-              : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+              : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30",
+            isEditing && "opacity-50 cursor-not-allowed"
           )}
           title={isRunning ? "Pause" : "Start"}
         >
@@ -142,6 +198,7 @@ function TaskTimer({ taskId }: { taskId: string }) {
       </div>
     </div>
   );
+}
 }
 
 function UserTaskCard({
