@@ -67,7 +67,7 @@ const statusColors: Record<
   },
 };
 
-// Timer Component with Manual Edit Feature
+// --- Timer Component with Edit Feature ---
 function TaskTimer({ taskId }: { taskId: string }) {
   const [seconds, setSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
@@ -108,7 +108,7 @@ function TaskTimer({ taskId }: { taskId: string }) {
   }, []);
 
   const handleReset = () => {
-    if (confirm("Reset timer?")) {
+    if (confirm("Reset timer ke 00:00:00?")) {
       setSeconds(0);
       setIsRunning(false);
       sessionStorage.removeItem(`timer-${taskId}`);
@@ -121,7 +121,7 @@ function TaskTimer({ taskId }: { taskId: string }) {
     setEditHours(h.toString());
     setEditMinutes(m.toString());
     setIsEditing(true);
-    setIsRunning(false); // Pause while editing
+    setIsRunning(false); // Otomatis pause saat edit
   };
 
   const saveEdit = () => {
@@ -141,286 +141,20 @@ function TaskTimer({ taskId }: { taskId: string }) {
             type="number"
             value={editHours}
             onChange={(e) => setEditHours(e.target.value)}
-            className="w-10 rounded border border-border bg-background px-1 text-xs text-center"
-            placeholder="HH"
+            className="w-10 rounded border border-border bg-background px-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-primary"
+            min="0"
           />
-          <span className="text-xs">:</span>
+          <span className="text-xs text-muted-foreground">h</span>
           <input
             type="number"
             value={editMinutes}
             onChange={(e) => setEditMinutes(e.target.value)}
-            className="w-10 rounded border border-border bg-background px-1 text-xs text-center"
-            placeholder="MM"
+            className="w-10 rounded border border-border bg-background px-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-primary"
+            min="0"
+            max="59"
           />
+          <span className="text-xs text-muted-foreground">m</span>
           <button onClick={saveEdit} className="ml-1 text-emerald-400 hover:text-emerald-300">
-            <Check className="h-3.5 w-3.5" />
+            <Check className="h-4 w-4" />
           </button>
-          <button onClick={() => setIsEditing(false)} className="text-rose-400 hover:text-rose-300">
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      ) : (
-        <span className="font-mono text-sm text-foreground min-w-[70px]">
-          {formatTime(seconds)}
-        </span>
-      )}
-
-      <div className="flex items-center gap-1 ml-auto">
-        {!isEditing && (
-          <>
-            <button
-              onClick={() => setIsRunning(!isRunning)}
-              className={cn(
-                "rounded-md p-1 transition-colors",
-                isRunning
-                  ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
-                  : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
-              )}
-            >
-              {isRunning ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-            </button>
-            <button
-              onClick={handleReset}
-              className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-              title="Reset"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={startEditing}
-              className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-              title="Edit Time"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function UserTaskCard({
-  task,
-  onToggleUploaded,
-  onToggleCollapsed,
-}: {
-  task: Task;
-  onToggleUploaded: () => void;
-  onToggleCollapsed: () => void;
-}) {
-  const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
-  const priorityKey = `${task.taskType}-${task.priority}` as keyof typeof priorityConfig;
-  const priority = priorityConfig[priorityKey];
-  const statusStyle = statusColors[task.status];
-  const isBacklog = task.status === "BACKLOG";
-  const isDone = task.status === "DONE";
-
-  if (task.isCollapsed && !task.isUploaded) {
-    return (
-      <div className="rounded-lg border border-border bg-card p-3 shadow-lg transition-all hover:border-primary/30">
-        <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] text-muted-foreground truncate">{task.projectName}</p>
-            <h3 className="text-sm font-medium text-card-foreground truncate">{task.title}</h3>
-          </div>
-          <button onClick={onToggleCollapsed} className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-secondary transition-colors">
-            <Maximize2 className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (task.isUploaded) {
-    return (
-      <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 shadow-lg transition-all">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/20">
-              <Check className="h-3.5 w-3.5 text-emerald-400" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] text-emerald-400/70 truncate">{task.projectName}</p>
-              <h3 className="text-sm font-medium text-emerald-400 truncate">{task.title}</h3>
-            </div>
-          </div>
-          <span className="text-[10px] text-emerald-400/70 px-2 py-0.5 rounded-full bg-emerald-500/20">Uploaded</span>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="rounded-lg border border-border bg-card p-4 shadow-lg transition-all hover:border-primary/30">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] text-muted-foreground mb-1">{task.projectName}</p>
-          <h3 className="font-medium text-card-foreground leading-snug">{task.title}</h3>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-medium", statusStyle.bg, statusStyle.text, statusStyle.border)}>{task.status}</span>
-          <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-medium", priority.bgColor, priority.textColor, priority.borderColor)}>{priority.label}</span>
-          <button onClick={onToggleCollapsed} className="rounded-md p-1 text-muted-foreground hover:bg-secondary transition-colors"><Minimize2 className="h-3.5 w-3.5" /></button>
-        </div>
-      </div>
-
-      <div className="mb-3">
-        <TaskTimer taskId={task.id} />
-      </div>
-
-      <div className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Calendar className="h-3 w-3" />
-        <span>{isBacklog ? `Received: ${formatDate(task.receivedDate)}` : `Moved: ${formatDate(task.movedDate || task.receivedDate)}`}</span>
-      </div>
-
-      <div className="mb-3">
-        <button onClick={() => setIsDescriptionOpen(!isDescriptionOpen)} className="flex w-full items-center justify-between rounded-md bg-secondary/50 px-3 py-2 text-sm text-muted-foreground hover:bg-secondary transition-colors">
-          <span>Deskripsi</span>
-          {isDescriptionOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
-        {isDescriptionOpen && (
-          <div className="mt-2 rounded-md bg-secondary/30 px-3 py-2 space-y-3">
-            <p className="text-sm text-muted-foreground leading-relaxed">{task.description}</p>
-            {task.auditTrail.length > 0 && (
-              <div className="border-t border-border pt-3">
-                <div className="flex items-center gap-1.5 mb-2"><History className="h-3 w-3" /><span className="text-xs font-medium">Activity Log</span></div>
-                <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                  {task.auditTrail.slice().reverse().map((entry, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-[11px]">
-                      <span className="shrink-0 text-muted-foreground/60">{formatDateTime(entry.timestamp)}</span>
-                      <span className="text-muted-foreground">{entry.action}</span>
-                      <span className="text-primary/80">by {entry.by}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-wrap gap-1.5 mb-3">
-        {task.tags.map((tag) => (
-          <span key={tag} className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"><Tag className="h-3 w-3" />{tag}</span>
-        ))}
-      </div>
-
-      {isDone && (
-        <div className="border-t border-border pt-3">
-          <label className="flex items-center gap-2 cursor-pointer group/upload">
-            <div className={cn("flex h-5 w-5 items-center justify-center rounded border transition-colors", task.isUploaded ? "bg-emerald-500 border-emerald-500" : "border-muted-foreground/50 hover:border-emerald-500")} onClick={(e) => { e.preventDefault(); onToggleUploaded(); }}>
-              {task.isUploaded && <Check className="h-3 w-3 text-white" />}
-            </div>
-            <span className={cn("text-xs transition-colors", task.isUploaded ? "text-emerald-400" : "text-muted-foreground group-hover/upload:text-emerald-400")}><Upload className="h-3 w-3 inline mr-1" />Mark as Uploaded</span>
-          </label>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default function UserTaskPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const router = useRouter();
-  const user = allUsers.find((u) => u.id === id);
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [activeUser, setActiveUser] = useState<Person | null>(null);
-
-  useEffect(() => {
-    const storedUser = sessionStorage.getItem("activeUser");
-    if (storedUser) setActiveUser(JSON.parse(storedUser));
-  }, []);
-
-  const handleLogout = () => {
-    sessionStorage.removeItem("activeUser");
-    router.push("/login");
-  };
-
-  const toggleUploaded = (taskId: string) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, isUploaded: !t.isUploaded } : t));
-  };
-
-  const toggleCollapsed = (taskId: string) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, isCollapsed: !t.isCollapsed } : t));
-  };
-
-  const userTasks = useMemo(() => {
-    if (!user) return [];
-    return tasks.filter(task => user.role === "developer" ? task.developers.some(d => d.id === id) : task.qcAssignees.some(q => q.id === id));
-  }, [user, id, tasks]);
-
-  const tasksByStatus = useMemo(() => {
-    const grouped: Record<TaskStatus, Task[]> = { BACKLOG: [], DEVELOPMENT: [], "QC TEST": [], DONE: [] };
-    userTasks.forEach(t => grouped[t.status].push(t));
-    return grouped;
-  }, [userTasks]);
-
-  if (!user) return <div className="flex min-h-screen items-center justify-center">User not found</div>;
-
-  return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-card/80 backdrop-blur-sm">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Link href="/"><Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button></Link>
-            <div className="flex items-center gap-4">
-              <div className={cn("flex h-14 w-14 items-center justify-center rounded-full text-xl font-bold text-white", getAvatarColor(user.id))}>{getInitials(user.name)}</div>
-              <div>
-                <h1 className="text-xl font-semibold">{user.name}</h1>
-                <div className="flex items-center gap-2 mt-1">
-                  {user.role === "developer" ? <Code2 className="h-4 w-4 text-blue-400" /> : <ShieldCheck className="h-4 w-4 text-amber-400" />}
-                  <span className={cn("text-sm font-medium", user.role === "developer" ? "text-blue-400" : "text-amber-400")}>{user.role === "developer" ? "Developer" : "QC Engineer"}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          {activeUser && (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 rounded-lg bg-secondary border px-3 py-1.5">
-                <User className="h-4 w-4 text-muted-foreground" /><span className="text-sm">{activeUser.name}</span>
-                <span className={`text-xs px-1.5 py-0.5 rounded ${activeUser.role === "developer" ? "bg-blue-500/20 text-blue-400" : "bg-amber-500/20 text-amber-400"}`}>{activeUser.role === "developer" ? "Dev" : "QC"}</span>
-              </div>
-              <Button variant="outline" size="sm" onClick={handleLogout}><LogOut className="h-4 w-4 mr-2" />Logout</Button>
-            </div>
-          )}
-        </div>
-      </header>
-
-      <div className="border-b border-border bg-secondary/30 px-6 py-4">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2"><Briefcase className="h-4 w-4 text-muted-foreground" /><span className="text-sm">Total Tasks: <span className="font-semibold">{userTasks.length}</span></span></div>
-          <div className="h-4 w-px bg-border" />
-          <div className="flex gap-4">
-            {(Object.keys(tasksByStatus) as TaskStatus[]).map(status => (
-              tasksByStatus[status].length > 0 && <span key={status} className={cn("rounded-full border px-2 py-0.5 text-xs font-medium", statusColors[status].bg, statusColors[status].text, statusColors[status].border)}>{status}: {tasksByStatus[status].length}</span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <main className="p-6">
-        {userTasks.length === 0 ? (
-          <div className="py-16 text-center"><Briefcase className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" /><h2 className="text-lg font-medium">Tidak ada tugas</h2></div>
-        ) : (
-          <div className="space-y-8">
-            {(Object.keys(tasksByStatus) as TaskStatus[]).map(status => (
-              tasksByStatus[status].length > 0 && (
-                <section key={status}>
-                  <div className="mb-4 flex items-center gap-3">
-                    <span className={cn("h-2.5 w-2.5 rounded-full", status === "BACKLOG" ? "bg-slate-400" : status === "DEVELOPMENT" ? "bg-blue-400" : status === "QC TEST" ? "bg-amber-400" : "bg-emerald-400")} />
-                    <h2 className="text-lg font-semibold">{status}</h2>
-                    <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", statusColors[status].bg, statusColors[status].text)}>{tasksByStatus[status].length}</span>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {tasksByStatus[status].map(task => <UserTaskCard key={task.id} task={task} onToggleUploaded={() => toggleUploaded(task.id)} onToggleCollapsed={() => toggleCollapsed(task.id)} />)}
-                  </div>
-                </section>
-              )
-            ))}
-          </div>
-        )}
-      </main>
-    </div>
-  );
-}
+          <button onClick={() => setIsEditing(false)} className="text-r
