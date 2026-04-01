@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Tag, Calendar, UserPlus, 
-  Check, X, Upload, History, Minimize2, Maximize2, Timer
+  Check, X, Upload, History, Minimize2, Maximize2, Timer, ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -15,7 +15,7 @@ import {
   getAvatarColor, formatDate, formatDateTime
 } from "@/lib/kanban-types";
 
-// --- Komponen Hitung Total Waktu ---
+// --- Komponen Hitung Total Waktu (Dev + QC) ---
 function TotalTimeDisplay({ task }: { task: Task }) {
   const [totalStr, setTotalStr] = useState("00:00:00");
 
@@ -55,19 +55,48 @@ function ClickableAvatar({ person, size = "sm" }: { person: Person, size?: "sm" 
 }
 
 export function TaskCard({ task, onMoveForward, onMoveBackward, onAssignQC, onRemoveQC, onAssignDeveloper, onRemoveDeveloper, onToggleUploaded, onToggleCollapsed, onChangePriority, canMoveForward, canMoveBackward }: any) {
-  const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
   const [isDevPopoverOpen, setIsDevPopoverOpen] = useState(false);
   const [isQCPopoverOpen, setIsQCPopoverOpen] = useState(false);
 
   const isQcColumn = task.status === "QC TEST";
   const isBacklogOrDev = task.status === "BACKLOG" || task.status === "DEVELOPMENT";
-  const priority = priorityConfig[`${task.taskType}-${task.priority}` as keyof typeof priorityConfig];
+  const isDone = task.status === "DONE";
 
   const availDevs = availableDevelopers.filter(d => !task.developers.some((ad: any) => ad.id === d.id));
   const availQCs = availableQCers.filter(q => !task.qcAssignees.some((aq: any) => aq.id === q.id));
 
-  // --- COLLAPSED VIEW ---
-  if (task.isCollapsed && !task.isUploaded) {
+  // --- 1. UPLOADED VIEW (Kartu Hijau saat sudah Uploaded) ---
+  if (task.isUploaded) {
+    return (
+      <div className="group rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 shadow-lg transition-all">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/20">
+              <Check className="h-3.5 w-3.5 text-emerald-400" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] text-emerald-400/70 truncate">{task.projectName}</p>
+              <h3 className="text-sm font-medium text-emerald-400 truncate">{task.title}</h3>
+              <TotalTimeDisplay task={task} />
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-emerald-400/70 px-2 py-0.5 rounded-full bg-emerald-500/20">Uploaded</span>
+            <button
+              onClick={() => onToggleUploaded(task.id)}
+              className="shrink-0 rounded-md p-1.5 text-emerald-400/70 hover:bg-emerald-500/20 hover:text-emerald-400 transition-colors"
+              title="Batalkan Upload"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- 2. COLLAPSED VIEW (Shrink) ---
+  if (task.isCollapsed) {
     return (
       <div className="group rounded-lg border bg-card p-3 shadow-sm hover:border-primary/50 transition-all">
         <div className="flex justify-between items-center gap-2">
@@ -76,26 +105,29 @@ export function TaskCard({ task, onMoveForward, onMoveBackward, onAssignQC, onRe
             <h3 className="text-sm font-medium truncate">{task.title}</h3>
             <TotalTimeDisplay task={task} />
           </div>
-          <button onClick={onToggleCollapsed} className="p-1 text-muted-foreground hover:text-foreground"><Maximize2 className="h-4 w-4"/></button>
+          <button onClick={() => onToggleCollapsed(task.id)} className="p-1.5 text-muted-foreground hover:text-foreground">
+            <Maximize2 className="h-4 w-4"/>
+          </button>
         </div>
       </div>
     );
   }
 
-  // --- FULL VIEW ---
+  // --- 3. FULL VIEW ---
   return (
     <div className="group rounded-lg border bg-card p-4 shadow-md hover:border-primary/50 transition-all">
-      {/* Header */}
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1">
           <p className="text-[10px] text-muted-foreground">{task.projectName}</p>
           <h3 className="font-semibold text-sm leading-tight">{task.title}</h3>
           <TotalTimeDisplay task={task} />
         </div>
-        <button onClick={onToggleCollapsed} className="p-1 text-muted-foreground hover:bg-secondary rounded"><Minimize2 className="h-3.5 w-3.5" /></button>
+        <button onClick={() => onToggleCollapsed(task.id)} className="p-1 text-muted-foreground hover:bg-secondary rounded">
+          <Minimize2 className="h-3.5 w-3.5" />
+        </button>
       </div>
 
-      {/* Developer Assignment (BACKLOG, DEV, & QC TEST) */}
+      {/* Developer Assignment (Muncul di BACKLOG, DEV, & QC TEST sesuai request) */}
       {(isBacklogOrDev || isQcColumn) && (
         <div className="mb-3 p-2 rounded-md bg-blue-500/5 border border-blue-500/20">
           <div className="flex justify-between items-center mb-2">
@@ -124,7 +156,7 @@ export function TaskCard({ task, onMoveForward, onMoveBackward, onAssignQC, onRe
         </div>
       )}
 
-      {/* QC Assignment (Hanya QC Column) */}
+      {/* QC Assignment */}
       {isQcColumn && (
         <div className="mb-3 p-2 rounded-md bg-amber-500/5 border border-amber-500/20">
           <div className="flex justify-between items-center mb-2">
@@ -153,16 +185,16 @@ export function TaskCard({ task, onMoveForward, onMoveBackward, onAssignQC, onRe
         </div>
       )}
 
-      {/* Footer Navigation */}
+      {/* Footer Navigation & Upload Checkbox */}
       <div className="flex justify-between items-center mt-3 pt-3 border-t">
         <div className="flex items-center gap-2">
-            {task.status === "DONE" && (
-                <label className="flex items-center gap-1 text-[10px] cursor-pointer" onClick={() => onToggleUploaded?.(task.id)}>
-                    <div className={cn("h-3.5 w-3.5 border rounded flex items-center justify-center", task.isUploaded ? "bg-emerald-500" : "")}>
-                        {task.isUploaded && <Check className="h-2.5 w-2.5 text-white"/>}
-                    </div>
-                    <span>Uploaded</span>
-                </label>
+            {isDone && (
+              <label className="flex items-center gap-2 cursor-pointer group/upload" onClick={() => onToggleUploaded(task.id)}>
+                <div className={cn("h-4 w-4 rounded border flex items-center justify-center transition-colors", task.isUploaded ? "bg-emerald-500 border-emerald-500" : "border-muted-foreground group-hover/upload:border-emerald-500")}>
+                  {task.isUploaded && <Check className="h-3 w-3 text-white" />}
+                </div>
+                <span className="text-[10px] text-muted-foreground group-hover/upload:text-emerald-400">Uploaded</span>
+              </label>
             )}
         </div>
         <div className="flex gap-1">
