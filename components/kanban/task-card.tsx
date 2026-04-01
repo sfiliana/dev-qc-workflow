@@ -38,7 +38,7 @@ function TotalTimeDisplay({ task }: { task: Task }) {
   if (task.status !== "DONE") return null;
 
   return (
-    <div className="flex items-center gap-1.5 text-emerald-500 font-mono text-[11px] mt-1">
+    <div className="flex items-center gap-1.5 text-emerald-500 font-mono text-[11px] mt-1 bg-emerald-500/5 px-2 py-0.5 rounded w-fit border border-emerald-500/20">
       <Timer className="h-3 w-3" />
       <span>Total Work: {totalStr}</span>
     </div>
@@ -55,17 +55,20 @@ function ClickableAvatar({ person, size = "sm" }: { person: Person, size?: "sm" 
 }
 
 export function TaskCard({ task, onMoveForward, onMoveBackward, onAssignQC, onRemoveQC, onAssignDeveloper, onRemoveDeveloper, onToggleUploaded, onToggleCollapsed, onChangePriority, canMoveForward, canMoveBackward }: any) {
+  const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
   const [isDevPopoverOpen, setIsDevPopoverOpen] = useState(false);
   const [isQCPopoverOpen, setIsQCPopoverOpen] = useState(false);
+  const [isPriorityPopoverOpen, setIsPriorityPopoverOpen] = useState(false);
 
   const isQcColumn = task.status === "QC TEST";
   const isBacklogOrDev = task.status === "BACKLOG" || task.status === "DEVELOPMENT";
   const isDone = task.status === "DONE";
+  const priority = priorityConfig[`${task.taskType}-${task.priority}` as keyof typeof priorityConfig];
 
   const availDevs = availableDevelopers.filter(d => !task.developers.some((ad: any) => ad.id === d.id));
   const availQCs = availableQCers.filter(q => !task.qcAssignees.some((aq: any) => aq.id === q.id));
 
-  // --- 1. UPLOADED VIEW (Kartu Hijau saat sudah Uploaded) ---
+  // --- 1. UPLOADED VIEW ---
   if (task.isUploaded) {
     return (
       <div className="group rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 shadow-lg transition-all">
@@ -80,22 +83,13 @@ export function TaskCard({ task, onMoveForward, onMoveBackward, onAssignQC, onRe
               <TotalTimeDisplay task={task} />
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] text-emerald-400/70 px-2 py-0.5 rounded-full bg-emerald-500/20">Uploaded</span>
-            <button
-              onClick={() => onToggleUploaded(task.id)}
-              className="shrink-0 rounded-md p-1.5 text-emerald-400/70 hover:bg-emerald-500/20 hover:text-emerald-400 transition-colors"
-              title="Batalkan Upload"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+          <button onClick={() => onToggleUploaded(task.id)} className="text-emerald-400/70 hover:text-emerald-400 p-1"><X className="h-4 w-4" /></button>
         </div>
       </div>
     );
   }
 
-  // --- 2. COLLAPSED VIEW (Shrink) ---
+  // --- 2. COLLAPSED VIEW ---
   if (task.isCollapsed) {
     return (
       <div className="group rounded-lg border bg-card p-3 shadow-sm hover:border-primary/50 transition-all">
@@ -105,9 +99,7 @@ export function TaskCard({ task, onMoveForward, onMoveBackward, onAssignQC, onRe
             <h3 className="text-sm font-medium truncate">{task.title}</h3>
             <TotalTimeDisplay task={task} />
           </div>
-          <button onClick={() => onToggleCollapsed(task.id)} className="p-1.5 text-muted-foreground hover:text-foreground">
-            <Maximize2 className="h-4 w-4"/>
-          </button>
+          <button onClick={() => onToggleCollapsed(task.id)} className="p-1.5 text-muted-foreground hover:text-foreground"><Maximize2 className="h-4 w-4"/></button>
         </div>
       </div>
     );
@@ -122,15 +114,55 @@ export function TaskCard({ task, onMoveForward, onMoveBackward, onAssignQC, onRe
           <h3 className="font-semibold text-sm leading-tight">{task.title}</h3>
           <TotalTimeDisplay task={task} />
         </div>
-        <button onClick={() => onToggleCollapsed(task.id)} className="p-1 text-muted-foreground hover:bg-secondary rounded">
-          <Minimize2 className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex gap-1">
+            <Popover open={isPriorityPopoverOpen} onOpenChange={setIsPriorityPopoverOpen}>
+              <PopoverTrigger asChild>
+                <button className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold border", priority.bgColor, priority.textColor, priority.borderColor)}>{priority.label}</button>
+              </PopoverTrigger>
+              <PopoverContent className="w-48 p-1">
+                {priorityOptions.map((opt) => (
+                  <button key={`${opt.taskType}-${opt.priority}`} onClick={() => { onChangePriority?.(task.id, opt.taskType, opt.priority); setIsPriorityPopoverOpen(false); }} className="w-full text-left p-2 text-xs hover:bg-secondary rounded">{opt.taskType} - {opt.priority}</button>
+                ))}
+              </PopoverContent>
+            </Popover>
+            <button onClick={() => onToggleCollapsed(task.id)} className="p-1 text-muted-foreground hover:bg-secondary rounded"><Minimize2 className="h-3.5 w-3.5" /></button>
+        </div>
       </div>
 
-      {/* Developer Assignment (Muncul di BACKLOG, DEV, & QC TEST sesuai request) */}
+      <div className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Calendar className="h-3 w-3" />
+        <span>{formatDate(task.movedDate || task.receivedDate)}</span>
+      </div>
+
+      {/* Deskripsi & Log Activity */}
+      <div className="mb-3">
+        <button onClick={() => setIsDescriptionOpen(!isDescriptionOpen)} className="w-full flex justify-between items-center bg-secondary/50 px-3 py-2 rounded text-xs text-muted-foreground">
+          <span>Deskripsi & Log</span> {isDescriptionOpen ? <ChevronUp className="h-4 w-4"/> : <ChevronDown className="h-4 w-4"/>}
+        </button>
+        {isDescriptionOpen && (
+          <div className="mt-2 space-y-3 bg-secondary/20 p-2 rounded border border-border">
+            <p className="text-xs leading-relaxed">{task.description}</p>
+            <div className="border-t pt-2">
+                <div className="flex items-center gap-1 mb-1 text-[10px] font-bold text-muted-foreground uppercase"><History className="h-3 w-3"/> Activity Log</div>
+                <div className="space-y-1 max-h-24 overflow-y-auto">
+                    {task.auditTrail.slice().reverse().map((log: any, i: number) => (
+                        <div key={i} className="text-[10px] text-muted-foreground"><span className="text-primary">{log.by}</span>: {log.action}</div>
+                    ))}
+                </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Tags */}
+      <div className="flex flex-wrap gap-1 mb-4">
+        {task.tags.map((t: string) => <span key={t} className="px-2 py-0.5 bg-secondary text-[10px] rounded flex items-center gap-1"><Tag className="h-2 w-2"/>{t}</span>)}
+      </div>
+
+      {/* Developer Assignment (BACKLOG, DEV, & QC TEST) */}
       {(isBacklogOrDev || isQcColumn) && (
-        <div className="mb-3 p-2 rounded-md bg-blue-500/5 border border-blue-500/20">
-          <div className="flex justify-between items-center mb-2">
+        <div className="mb-2 p-2 rounded-md bg-blue-500/5 border border-blue-500/20">
+          <div className="flex justify-between items-center mb-1.5">
             <span className="text-[10px] font-bold text-blue-400 flex items-center gap-1"><UserPlus className="h-3 w-3"/> Developers</span>
             <Popover open={isDevPopoverOpen} onOpenChange={setIsDevPopoverOpen}>
               <PopoverTrigger asChild><button className="text-[10px] text-blue-400 hover:underline">+ Add</button></PopoverTrigger>
@@ -158,8 +190,8 @@ export function TaskCard({ task, onMoveForward, onMoveBackward, onAssignQC, onRe
 
       {/* QC Assignment */}
       {isQcColumn && (
-        <div className="mb-3 p-2 rounded-md bg-amber-500/5 border border-amber-500/20">
-          <div className="flex justify-between items-center mb-2">
+        <div className="mb-2 p-2 rounded-md bg-amber-500/5 border border-amber-500/20">
+          <div className="flex justify-between items-center mb-1.5">
             <span className="text-[10px] font-bold text-amber-400 flex items-center gap-1"><ShieldCheck className="h-3 w-3"/> QC Assignees</span>
             <Popover open={isQCPopoverOpen} onOpenChange={setIsQCPopoverOpen}>
               <PopoverTrigger asChild><button className="text-[10px] text-amber-400 hover:underline">+ Add</button></PopoverTrigger>
@@ -185,7 +217,7 @@ export function TaskCard({ task, onMoveForward, onMoveBackward, onAssignQC, onRe
         </div>
       )}
 
-      {/* Footer Navigation & Upload Checkbox */}
+      {/* Footer Navigation */}
       <div className="flex justify-between items-center mt-3 pt-3 border-t">
         <div className="flex items-center gap-2">
             {isDone && (
@@ -193,7 +225,7 @@ export function TaskCard({ task, onMoveForward, onMoveBackward, onAssignQC, onRe
                 <div className={cn("h-4 w-4 rounded border flex items-center justify-center transition-colors", task.isUploaded ? "bg-emerald-500 border-emerald-500" : "border-muted-foreground group-hover/upload:border-emerald-500")}>
                   {task.isUploaded && <Check className="h-3 w-3 text-white" />}
                 </div>
-                <span className="text-[10px] text-muted-foreground group-hover/upload:text-emerald-400">Uploaded</span>
+                <span className="text-[10px] text-muted-foreground group-hover/upload:text-emerald-400 font-medium">Uploaded</span>
               </label>
             )}
         </div>
